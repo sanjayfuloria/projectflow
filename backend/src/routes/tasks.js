@@ -6,6 +6,7 @@ const { authenticate, requireAdminOrMember } = require('../middleware/auth');
 const { emitBoard, emitUser } = require('../services/socket');
 const { sendTaskAssigned } = require('../services/email');
 const { createNotification } = require('./notifications');
+const { logActivity } = require('../services/activity');
 
 const router = express.Router();
 const prisma = new PrismaClient();

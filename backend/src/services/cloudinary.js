@@ -3,6 +3,7 @@
 // Sign up at: https://cloudinary.com → Dashboard → copy Cloud Name, API Key, API Secret
 
 const cloudinary = require('cloudinary').v2;
+// Using cloudinary v1 (compatible with multer-storage-cloudinary@4)
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 

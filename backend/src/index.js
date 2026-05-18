@@ -10,19 +10,25 @@ const cookieParser = require('cookie-parser');
 const rateLimit    = require('express-rate-limit');
 const jwt          = require('jsonwebtoken');
 
-const authRoutes       = require('./routes/auth');
-const taskRoutes       = require('./routes/tasks');
-const columnRoutes     = require('./routes/columns');
-const memberRoutes     = require('./routes/members');
-const commentRoutes    = require('./routes/comments');
-const subtaskRoutes    = require('./routes/subtasks');
-const attachmentRoutes = require('./routes/attachments');
-const notifRoutes      = require('./routes/notifications');
+const authRoutes        = require('./routes/auth');
+const taskRoutes        = require('./routes/tasks');
+const columnRoutes      = require('./routes/columns');
+const memberRoutes      = require('./routes/members');
+const commentRoutes     = require('./routes/comments');
+const subtaskRoutes     = require('./routes/subtasks');
+const attachmentRoutes  = require('./routes/attachments');
+const notifRoutes       = require('./routes/notifications');
+const dependencyRoutes  = require('./routes/dependencies');
+const sprintRoutes      = require('./routes/sprints');
+const searchRoutes      = require('./routes/search');
+const activityRoutes    = require('./routes/activity');
 
 const app    = express();
 const server = http.createServer(app);
 const PORT   = process.env.PORT || 4000;
 const FRONTEND = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+// Trust Railway/Nginx proxy
 app.set('trust proxy', 1);
 
 // ── Socket.io ─────────────────────────────────────────────────────────────────
@@ -31,7 +37,6 @@ const io = new Server(server, {
   transports: ['websocket', 'polling'],
 });
 
-// JWT auth for sockets
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
   if (!token) return next(new Error('No token'));
@@ -50,7 +55,6 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {});
 });
 
-// Make io available in route handlers via req.app.get('io')
 app.set('io', io);
 
 // ── Middleware ────────────────────────────────────────────────────────────────
@@ -75,6 +79,10 @@ app.use('/api/comments',      commentRoutes);
 app.use('/api/subtasks',      subtaskRoutes);
 app.use('/api/attachments',   attachmentRoutes);
 app.use('/api/notifications', notifRoutes);
+app.use('/api/dependencies',  dependencyRoutes);
+app.use('/api/sprints',       sprintRoutes);
+app.use('/api/search',        searchRoutes);
+app.use('/api/activity',      activityRoutes);
 
 app.use((req, res) => res.status(404).json({ error: `${req.method} ${req.path} not found` }));
 app.use((err, req, res, _next) => {

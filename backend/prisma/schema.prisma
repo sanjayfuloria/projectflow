@@ -24,6 +24,7 @@ model User {
   tasksCreated  Task[]         @relation("TaskCreator")
   refreshTokens RefreshToken[]
   notifications Notification[]
+  activityLogs  ActivityLog[]
 
   @@map("users")
 }
@@ -52,6 +53,33 @@ model Column {
   @@map("columns")
 }
 
+model Sprint {
+  id        String      @id @default(uuid())
+  name      String
+  goal      String?
+  status    SprintStatus @default(PLANNED)
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  tasks SprintTask[]
+
+  @@map("sprints")
+}
+
+model SprintTask {
+  id       String @id @default(uuid())
+  sprintId String
+  taskId   String
+  order    Int    @default(0)
+  sprint   Sprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  task     Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([sprintId, taskId])
+  @@map("sprint_tasks")
+}
+
 model Task {
   id          String     @id @default(uuid())
   taskKey     String     @unique
@@ -62,6 +90,7 @@ model Task {
   tag         Tag        @default(FEATURE)
   progress    Int        @default(0)
   dueDate     DateTime?
+  storyPoints Int?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
@@ -72,22 +101,42 @@ model Task {
   creatorId  String
   creator    User    @relation("TaskCreator", fields: [creatorId], references: [id])
 
-  comments    Comment[]
-  subtasks    Subtask[]
-  attachments Attachment[]
+  comments     Comment[]
+  subtasks     Subtask[]
+  attachments  Attachment[]
+  activityLogs ActivityLog[]
+  sprints      SprintTask[]
+
+  // Dependencies
+  blockedBy    TaskDependency[] @relation("BlockedTask")
+  blocks       TaskDependency[] @relation("BlockingTask")
 
   @@map("tasks")
 }
 
+model TaskDependency {
+  id            String         @id @default(uuid())
+  blockingTaskId String
+  blockedTaskId  String
+  type          DependencyType @default(BLOCKS)
+  createdAt     DateTime       @default(now())
+
+  blockingTask Task @relation("BlockingTask", fields: [blockingTaskId], references: [id], onDelete: Cascade)
+  blockedTask  Task @relation("BlockedTask",  fields: [blockedTaskId],  references: [id], onDelete: Cascade)
+
+  @@unique([blockingTaskId, blockedTaskId])
+  @@map("task_dependencies")
+}
+
 model Subtask {
-  id          String   @id @default(uuid())
-  title       String
-  completed   Boolean  @default(false)
-  order       Int      @default(0)
-  taskId      String
-  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  title     String
+  completed Boolean  @default(false)
+  order     Int      @default(0)
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("subtasks")
 }
@@ -97,7 +146,7 @@ model Attachment {
   filename     String
   originalName String
   url          String
-  publicId     String   // Cloudinary public_id for deletion
+  publicId     String
   size         Int
   mimeType     String
   taskId       String
@@ -114,10 +163,36 @@ model Comment {
   taskId    String
   task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   authorId  String
+  mentions  CommentMention[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("comments")
+}
+
+model CommentMention {
+  id        String  @id @default(uuid())
+  commentId String
+  userId    String
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@map("comment_mentions")
+}
+
+model ActivityLog {
+  id         String       @id @default(uuid())
+  taskId     String
+  task       Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User         @relation(fields: [userId], references: [id])
+  action     ActivityAction
+  field      String?
+  oldValue   String?
+  newValue   String?
+  createdAt  DateTime     @default(now())
+
+  @@map("activity_logs")
 }
 
 model Notification {
@@ -155,6 +230,17 @@ enum Tag {
   DOCS
 }
 
+enum SprintStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+}
+
+enum DependencyType {
+  BLOCKS
+  BLOCKED_BY
+}
+
 enum NotificationType {
   TASK_ASSIGNED
   TASK_DUE_SOON
@@ -162,4 +248,24 @@ enum NotificationType {
   COMMENT_ADDED
   TASK_MOVED
   SUBTASK_COMPLETED
+  MENTIONED
+  DEPENDENCY_ADDED
+  SPRINT_STARTED
+  SPRINT_COMPLETED
+}
+
+enum ActivityAction {
+  CREATED
+  UPDATED
+  STATUS_CHANGED
+  ASSIGNED
+  PRIORITY_CHANGED
+  DUE_DATE_CHANGED
+  COMMENT_ADDED
+  ATTACHMENT_ADDED
+  SUBTASK_ADDED
+  DEPENDENCY_ADDED
+  ADDED_TO_SPRINT
+  REMOVED_FROM_SPRINT
+  PROGRESS_UPDATED
 }
