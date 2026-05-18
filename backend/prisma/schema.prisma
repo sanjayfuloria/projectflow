@@ -1,0 +1,165 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  initials     String   @db.VarChar(3)
+  passwordHash String
+  role         Role     @default(MEMBER)
+  avatarColor  String   @default("linear-gradient(135deg,#6c63ff,#ff6584)")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tasksAssigned Task[]         @relation("TaskAssignee")
+  tasksCreated  Task[]         @relation("TaskCreator")
+  refreshTokens RefreshToken[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+model Column {
+  id        String   @id @default(uuid())
+  label     String
+  color     String   @default("#6c63ff")
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks Task[]
+
+  @@map("columns")
+}
+
+model Task {
+  id          String     @id @default(uuid())
+  taskKey     String     @unique
+  title       String
+  description String?
+  status      String
+  priority    Priority   @default(MEDIUM)
+  tag         Tag        @default(FEATURE)
+  progress    Int        @default(0)
+  dueDate     DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  columnId   String
+  column     Column  @relation(fields: [columnId], references: [id])
+  assigneeId String?
+  assignee   User?   @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creatorId  String
+  creator    User    @relation("TaskCreator", fields: [creatorId], references: [id])
+
+  comments    Comment[]
+  subtasks    Subtask[]
+  attachments Attachment[]
+
+  @@map("tasks")
+}
+
+model Subtask {
+  id          String   @id @default(uuid())
+  title       String
+  completed   Boolean  @default(false)
+  order       Int      @default(0)
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("subtasks")
+}
+
+model Attachment {
+  id           String   @id @default(uuid())
+  filename     String
+  originalName String
+  url          String
+  publicId     String   // Cloudinary public_id for deletion
+  size         Int
+  mimeType     String
+  taskId       String
+  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  @@map("attachments")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("comments")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+  title     String
+  message   String
+  read      Boolean          @default(false)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId    String?
+  createdAt DateTime         @default(now())
+
+  @@map("notifications")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum Tag {
+  FEATURE
+  BUG
+  DESIGN
+  RESEARCH
+  DOCS
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_DUE_SOON
+  TASK_OVERDUE
+  COMMENT_ADDED
+  TASK_MOVED
+  SUBTASK_COMPLETED
+}
