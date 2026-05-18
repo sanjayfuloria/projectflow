@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "ProjectFlow API – Express + Prisma + PostgreSQL",
   "main": "src/index.js",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
