@@ -23,6 +23,7 @@ const app    = express();
 const server = http.createServer(app);
 const PORT   = process.env.PORT || 4000;
 const FRONTEND = process.env.FRONTEND_URL || 'http://localhost:5173';
+app.set('trust proxy', 1);
 
 // ── Socket.io ─────────────────────────────────────────────────────────────────
 const io = new Server(server, {
