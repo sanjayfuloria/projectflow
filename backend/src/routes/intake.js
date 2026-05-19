@@ -103,6 +103,18 @@ router.get('/:id/submissions', authenticate, async (req, res) => {
 
 // ── Public routes (no auth) ───────────────────────────────────────────────────
 
+// GET /api/intake/public  – list all enabled forms (public, no auth)
+router.get('/public', async (req, res) => {
+  try {
+    const forms = await prisma.intakeForm.findMany({
+      where: { enabled: true },
+      select: { id: true, name: true, description: true, slug: true, defaultTag: true, enabled: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    res.json({ forms });
+  } catch { res.status(500).json({ error: 'Failed to fetch forms' }); }
+});
+
 // GET /api/intake/public/:slug  – get form for public display
 router.get('/public/:slug', async (req, res) => {
   try {

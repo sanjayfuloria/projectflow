@@ -5,7 +5,8 @@ import { SocketProvider } from './context/SocketContext'
 import LoginPage       from './pages/LoginPage'
 import RegisterPage    from './pages/RegisterPage'
 import BoardPage       from './pages/BoardPage'
-import PublicFormPage  from './pages/PublicFormPage'
+import PublicFormPage      from './pages/PublicFormPage'
+ import FormsLandingPage from './pages/FormsLandingPage'
 import LoadingSpinner  from './components/LoadingSpinner'
 
 function ProtectedRoute({ children }) {
@@ -28,6 +29,7 @@ function AppWithSocket() {
         <Route path="/login"      element={<PublicRoute><LoginPage /></PublicRoute>} />
         <Route path="/register"   element={<PublicRoute><RegisterPage /></PublicRoute>} />
         <Route path="/form/:slug" element={<PublicFormPage />} />
+        <Route path="/forms" element={<FormsLandingPage />} />
         <Route path="/*"          element={<ProtectedRoute><BoardPage /></ProtectedRoute>} />
       </Routes>
     </SocketProvider>
