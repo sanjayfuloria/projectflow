@@ -25,13 +25,14 @@ const activityRoutes    = require('./routes/activity');
 const automationRoutes  = require('./routes/automations');
 const intakeRoutes      = require('./routes/intake');
 const slackRoutes       = require('./routes/slack');
+const goalsRoutes       = require('./routes/goals');
+const emailIntakeRoutes = require('./routes/email-intake');
 
 const app    = express();
 const server = http.createServer(app);
 const PORT   = process.env.PORT || 4000;
 const FRONTEND = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// Trust Railway/Nginx proxy
 app.set('trust proxy', 1);
 
 // ── Socket.io ─────────────────────────────────────────────────────────────────
@@ -47,9 +48,7 @@ io.use((socket, next) => {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     socket.userId = payload.userId;
     next();
-  } catch {
-    next(new Error('Invalid token'));
-  }
+  } catch { next(new Error('Invalid token')); }
 });
 
 io.on('connection', (socket) => {
@@ -76,7 +75,7 @@ app.use(cookieParser());
 app.use(morgan('dev'));
 
 // ── Health ────────────────────────────────────────────────────────────────────
-app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/health', (req, res) => res.json({ status: 'ok', version: 'v6', timestamp: new Date().toISOString() }));
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/auth',          authRoutes);
@@ -94,6 +93,8 @@ app.use('/api/activity',      activityRoutes);
 app.use('/api/automations',   automationRoutes);
 app.use('/api/intake',        intakeRoutes);
 app.use('/api/slack',         slackRoutes);
+app.use('/api/goals',         goalsRoutes);
+app.use('/api/email-intake',  emailIntakeRoutes);
 
 app.use((req, res) => res.status(404).json({ error: `${req.method} ${req.path} not found` }));
 app.use((err, req, res, _next) => {
@@ -101,8 +102,10 @@ app.use((err, req, res, _next) => {
   res.status(err.status || 500).json({ error: err.message || 'Server error' });
 });
 
-// ── Due date checker (every 6h) ───────────────────────────────────────────────
+// ── Background jobs ───────────────────────────────────────────────────────────
 const { startDueDateChecker } = require('./routes/notifications');
+const { startRecurrenceChecker } = require('./services/recurrence');
 startDueDateChecker(io);
+startRecurrenceChecker(io);
 
-server.listen(PORT, () => console.log(`🚀 ProjectFlow API v5 on :${PORT}`));
+server.listen(PORT, () => console.log(`🚀 ProjectFlow API v6 on :${PORT}`));

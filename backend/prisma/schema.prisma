@@ -64,6 +64,7 @@ model Sprint {
   updatedAt DateTime    @updatedAt
 
   tasks SprintTask[]
+  goals GoalSprint[]
 
   @@map("sprints")
 }
@@ -90,8 +91,11 @@ model Task {
   tag         Tag        @default(FEATURE)
   progress    Int        @default(0)
   dueDate     DateTime?
-  storyPoints Int?
-  createdAt   DateTime   @default(now())
+  storyPoints   Int?
+  recurrence    String?   // none|daily|weekly|monthly|custom
+  recurrenceEnd DateTime?
+  parentTaskId  String?
+  createdAt     DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
   columnId   String
@@ -328,4 +332,37 @@ model SlackConfig {
   updatedAt   DateTime @updatedAt
 
   @@map("slack_configs")
+}
+
+model Goal {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  targetDate  DateTime?
+  status      GoalStatus @default(ACTIVE)
+  progress    Int        @default(0)
+  createdById String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  sprints GoalSprint[]
+
+  @@map("goals")
+}
+
+model GoalSprint {
+  id       String @id @default(uuid())
+  goalId   String
+  sprintId String
+  goal     Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  sprint   Sprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+
+  @@unique([goalId, sprintId])
+  @@map("goal_sprints")
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
 }

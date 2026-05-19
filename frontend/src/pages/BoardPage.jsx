@@ -11,6 +11,8 @@ import SprintsPage from './SprintsPage'
 import TimelinePage from './TimelinePage'
 import AutomationsPage from './AutomationsPage'
 import IntakeFormsPage from './IntakeFormsPage'
+import WorkloadPage from './WorkloadPage'
+import GoalsPage from './GoalsPage'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const todayStr = () => new Date().toISOString().split('T')[0]
@@ -527,7 +529,7 @@ function Column({ col, tasks, onDrop, onDragStart, onCardClick, onDeleteTask, on
 
 // ── Create Task Modal ─────────────────────────────────────────────────────────
 function CreateTaskModal({ columns, members, defaultColId, onClose, onCreate }) {
-  const [form,setForm]=useState({title:'',description:'',columnId:defaultColId||columns[0]?.id||'',priority:'MEDIUM',tag:'FEATURE',assigneeId:'',dueDate:'',progress:0,storyPoints:''})
+  const [form,setForm]=useState({title:'',description:'',columnId:defaultColId||columns[0]?.id||'',priority:'MEDIUM',tag:'FEATURE',assigneeId:'',dueDate:'',progress:0,storyPoints:'',recurrence:'none',recurrenceEnd:''})
   const [loading,setLoading]=useState(false)
   const f = k => e => setForm(p=>({...p,[k]:e.target.value}))
   const submit = async e => { e.preventDefault(); if(!form.title.trim()) return; setLoading(true); try{await onCreate(form)}finally{setLoading(false)} }
@@ -548,6 +550,8 @@ function CreateTaskModal({ columns, members, defaultColId, onClose, onCreate }) 
             <div><label className="label">Assignee</label><select className="input" value={form.assigneeId} onChange={f('assigneeId')}><option value="">Unassigned</option>{members.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
             <div><label className="label">Due Date</label><input type="date" className="input" value={form.dueDate} onChange={f('dueDate')}/></div>
             <div><label className="label">Story Points</label><input type="number" className="input" min="0" value={form.storyPoints} onChange={f('storyPoints')} placeholder="0"/></div>
+            <div><label className="label">Recurrence</label><select className="input" value={form.recurrence} onChange={f('recurrence')}><option value="none">None</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div>
+            {form.recurrence!=='none'&&<div><label className="label">Repeat Until</label><input type="date" className="input" value={form.recurrenceEnd} onChange={f('recurrenceEnd')}/></div>}
           </div>
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose} className="btn-secondary flex-1">Cancel</button>
@@ -691,7 +695,7 @@ export default function BoardPage() {
       <div className="h-12 flex items-center px-4 gap-2 bg-surface border-b border-border flex-shrink-0 overflow-x-auto">
         {/* View tabs */}
         <div className="flex gap-1 bg-surface2 rounded-lg p-1 flex-shrink-0 overflow-x-auto">
-          {[['board','Board'],['sprints','Sprints'],['timeline','Timeline'],['automations','Automations'],['intake','Forms']].map(([v,l])=>(
+          {[['board','Board'],['sprints','Sprints'],['timeline','Timeline'],['workload','Workload'],['goals','Goals'],['automations','Automations'],['intake','Forms']].map(([v,l])=>(
             <button key={v} onClick={()=>setActiveView(v)} className={`px-3 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${activeView===v?'bg-surface3 text-text':'text-text2 hover:text-text'}`}>{l}</button>
           ))}
         </div>
@@ -748,6 +752,10 @@ export default function BoardPage() {
         <AutomationsPage columns={columns} members={members} toast={toast}/>
       ) : activeView==='intake' ? (
         <IntakeFormsPage columns={columns} members={members} toast={toast}/>
+      ) : activeView==='workload' ? (
+        <WorkloadPage tasks={tasks} members={members} columns={columns}/>
+      ) : activeView==='goals' ? (
+        <GoalsPage toast={toast}/>
       ) : null}
 
       {/* Modals */}
