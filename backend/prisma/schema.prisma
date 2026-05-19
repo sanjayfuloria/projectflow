@@ -269,3 +269,63 @@ enum ActivityAction {
   REMOVED_FROM_SPRINT
   PROGRESS_UPDATED
 }
+
+model AutomationRule {
+  id          String   @id @default(uuid())
+  name        String
+  enabled     Boolean  @default(true)
+  trigger     String   // e.g. "status_changed", "due_date_passed", "task_created", "priority_changed"
+  triggerValue String? // e.g. the column id for status_changed
+  action      String   // e.g. "assign_to", "set_priority", "move_to_column", "send_notification", "post_slack"
+  actionValue String?  // e.g. userId, priority value, columnId
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("automation_rules")
+}
+
+model IntakeForm {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  columnId    String
+  defaultPriority String @default("MEDIUM")
+  defaultTag      String @default("FEATURE")
+  defaultAssigneeId String?
+  fields      Json     // array of { id, label, type, required }
+  enabled     Boolean  @default(true)
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  submissions IntakeSubmission[]
+
+  @@map("intake_forms")
+}
+
+model IntakeSubmission {
+  id         String   @id @default(uuid())
+  formId     String
+  form       IntakeForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  taskId     String?  // created task id
+  data       Json     // submitted field values
+  submitterEmail String?
+  createdAt  DateTime @default(now())
+
+  @@map("intake_submissions")
+}
+
+model SlackConfig {
+  id          String   @id @default(uuid())
+  webhookUrl  String
+  channel     String?
+  enabled     Boolean  @default(true)
+  events      Json     // array of event types to notify
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("slack_configs")
+}

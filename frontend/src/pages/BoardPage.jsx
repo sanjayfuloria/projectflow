@@ -8,6 +8,9 @@ import Topbar from '../components/Topbar'
 import LoadingSpinner from '../components/LoadingSpinner'
 import SearchPanel from '../components/SearchPanel'
 import SprintsPage from './SprintsPage'
+import TimelinePage from './TimelinePage'
+import AutomationsPage from './AutomationsPage'
+import IntakeFormsPage from './IntakeFormsPage'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const todayStr = () => new Date().toISOString().split('T')[0]
@@ -687,9 +690,10 @@ export default function BoardPage() {
       {/* Toolbar */}
       <div className="h-12 flex items-center px-4 gap-2 bg-surface border-b border-border flex-shrink-0 overflow-x-auto">
         {/* View tabs */}
-        <div className="flex gap-1 bg-surface2 rounded-lg p-1 flex-shrink-0">
-          <button onClick={()=>setActiveView('board')} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${activeView==='board'?'bg-surface3 text-text':'text-text2 hover:text-text'}`}>Board</button>
-          <button onClick={()=>setActiveView('sprints')} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${activeView==='sprints'?'bg-surface3 text-text':'text-text2 hover:text-text'}`}>Sprints</button>
+        <div className="flex gap-1 bg-surface2 rounded-lg p-1 flex-shrink-0 overflow-x-auto">
+          {[['board','Board'],['sprints','Sprints'],['timeline','Timeline'],['automations','Automations'],['intake','Forms']].map(([v,l])=>(
+            <button key={v} onClick={()=>setActiveView(v)} className={`px-3 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${activeView===v?'bg-surface3 text-text':'text-text2 hover:text-text'}`}>{l}</button>
+          ))}
         </div>
 
         <div className="w-px h-5 bg-border flex-shrink-0"/>
@@ -736,9 +740,15 @@ export default function BoardPage() {
             {canEdit&&<button onClick={()=>setShowColModal(true)} className="w-[240px] h-11 flex-shrink-0 bg-surface border border-dashed border-border rounded-xl flex items-center justify-center gap-2 text-text3 text-xs hover:border-accent hover:text-accent hover:bg-accent/5 transition-all">＋ Add Column</button>}
           </div>
         </div>
-      ) : (
+      ) : activeView==='sprints' ? (
         <SprintsPage tasks={tasks} columns={columns} canEdit={canEdit} onTaskClick={t=>setDetail(tasks.find(x=>x.id===t.id)||t)} toast={toast}/>
-      )}
+      ) : activeView==='timeline' ? (
+        <TimelinePage tasks={tasks} columns={columns} onTaskClick={t=>setDetail(tasks.find(x=>x.id===t.id)||t)}/>
+      ) : activeView==='automations' ? (
+        <AutomationsPage columns={columns} members={members} toast={toast}/>
+      ) : activeView==='intake' ? (
+        <IntakeFormsPage columns={columns} members={members} toast={toast}/>
+      ) : null}
 
       {/* Modals */}
       {detail&&<TaskDetail task={detail} columns={columns} members={members} allTasks={tasks} onClose={()=>setDetail(null)} onSave={handleSave} onDelete={handleDelete} canEdit={canEdit}/>}

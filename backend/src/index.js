@@ -22,6 +22,9 @@ const dependencyRoutes  = require('./routes/dependencies');
 const sprintRoutes      = require('./routes/sprints');
 const searchRoutes      = require('./routes/search');
 const activityRoutes    = require('./routes/activity');
+const automationRoutes  = require('./routes/automations');
+const intakeRoutes      = require('./routes/intake');
+const slackRoutes       = require('./routes/slack');
 
 const app    = express();
 const server = http.createServer(app);
@@ -59,7 +62,12 @@ app.set('io', io);
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-app.use(cors({ origin: FRONTEND, credentials: true, methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'], allowedHeaders: ['Content-Type','Authorization'] }));
+app.use(cors({
+  origin: [FRONTEND, /\.sanjayfuloria\.tech$/, 'http://localhost:5173'],
+  credentials: true,
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
+}));
 app.use('/api/', rateLimit({ windowMs: 15*60*1000, max: 300 }));
 app.use('/api/auth/', rateLimit({ windowMs: 15*60*1000, max: 20, message: { error: 'Too many auth attempts.' } }));
 app.use(express.json({ limit: '20mb' }));
@@ -83,6 +91,9 @@ app.use('/api/dependencies',  dependencyRoutes);
 app.use('/api/sprints',       sprintRoutes);
 app.use('/api/search',        searchRoutes);
 app.use('/api/activity',      activityRoutes);
+app.use('/api/automations',   automationRoutes);
+app.use('/api/intake',        intakeRoutes);
+app.use('/api/slack',         slackRoutes);
 
 app.use((req, res) => res.status(404).json({ error: `${req.method} ${req.path} not found` }));
 app.use((err, req, res, _next) => {
@@ -90,4 +101,8 @@ app.use((err, req, res, _next) => {
   res.status(err.status || 500).json({ error: err.message || 'Server error' });
 });
 
-server.listen(PORT, () => console.log(`🚀 ProjectFlow API + Socket.io on :${PORT}`));
+// ── Due date checker (every 6h) ───────────────────────────────────────────────
+const { startDueDateChecker } = require('./routes/notifications');
+startDueDateChecker(io);
+
+server.listen(PORT, () => console.log(`🚀 ProjectFlow API v5 on :${PORT}`));
