@@ -168,7 +168,7 @@ router.post('/public/:slug/submit', async (req, res) => {
         status:     form.columnId,
         columnId:   form.columnId,
         priority:   form.defaultPriority,
-        tag:        form.defaultTag,
+        tag:        form.defaultTag?.toUpperCase() || 'FEATURE',
         assigneeId: form.defaultAssigneeId || null,
         creatorId:  admin.id,
       },
